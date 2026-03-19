@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SISTEMA POLICIAL 8C</title>
+
+<style>
+body{font-family:Arial;background:#111;color:#fff;padding:10px}
+.container{max-width:1000px;margin:auto;background:#1c1c1c;padding:15px;border-radius:10px}
+input,select,textarea,button{width:100%;margin:5px 0;padding:10px;border-radius:6px;border:none}
+button{background:#28a745;color:#fff;font-weight:bold}
+.item{border:1px solid #444;padding:10px;margin:10px 0}
+.seccion{display:none}
+#preview{background:#000;padding:10px;margin-top:10px;white-space:pre-wrap}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>🚔 SISTEMA POLICIAL 8C</h2>
+
+<select id="tipo" onchange="cambiar()">
+<option value="">Seleccionar</option>
+<option value="cv8c">CONTROL POBLACIONAL</option>
+<option value="911">INTERVENCIÓN 911</option>
+</select>
+
+<input id="interventor" placeholder="Interventor">
+<input id="lugar" placeholder="Lugar">
+<button onclick="gps()">📍 GPS</button>
+<input id="fecha">
+<input id="hora">
+
+<!-- ================= CONTROL POBLACIONAL ================= -->
+<div id="cv8c" class="seccion">
+
+<h3>PERSONAS IDENTIFICADAS</h3>
+<div id="personas_cp"></div>
+<button onclick="addPersonaCP()">+ Persona</button>
+
+<h3>VEHÍCULOS IDENTIFICADOS</h3>
+<div id="vehiculos_cp"></div>
+<button onclick="addVehiculoCP()">+ Vehículo</button>
+
+</div>
+
+<!-- ================= INTERVENCIÓN 911 ================= -->
+<div id="acta911" class="seccion">
+
+<h3>PERSONAS</h3>
+<div id="personas911"></div>
+<button onclick="addPersona911()">+ Persona</button>
+
+<h3>VEHÍCULOS</h3>
+<div id="vehiculos911"></div>
+<button onclick="addVehiculo911()">+ Vehículo</button>
+
+<h3>SAME</h3>
+<select id="same"><option>NO</option><option>SI</option></select>
+<input id="unidad" placeholder="Unidad SAME">
+<input id="medico" placeholder="Médico">
+<input id="matricula" placeholder="Matrícula">
+<select id="traslado"><option>NO TRASLADA</option><option>TRASLADA</option></select>
+<input id="destino" placeholder="Destino">
+<input id="diagnostico" placeholder="Diagnóstico">
+
+<h3>INTERVENCIÓN JUDICIAL</h3>
+<input id="juzgado" placeholder="Juzgado">
+<input id="secretaria" placeholder="Secretaría">
+<input id="sumario" placeholder="N° Sumario">
+<input id="caratula" placeholder="Carátula">
+
+<h3>RELATO</h3>
+<textarea id="relato"></textarea>
+<button onclick="relatoIA()">🤖 Relato IA</button>
+
+</div>
+
+<button onclick="generar()">GENERAR</button>
+<button onclick="whatsapp()">WHATSAPP</button>
+
+<div id="preview"></div>
+
+</div>
+
+<script>
+
+window.onload=()=>{
+let n=new Date();
+fecha.value=n.toLocaleDateString();
+hora.value=n.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
+function cambiar(){
+cv8c.style.display="none";
+acta911.style.display="none";
+if(tipo.value==="cv8c") cv8c.style.display="block";
+if(tipo.value==="911") acta911.style.display="block";
+}
+
+function gps(){
+navigator.geolocation.getCurrentPosition(async pos=>{
+let lat=pos.coords.latitude;
+let lon=pos.coords.longitude;
+try{
+let r=await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lon);
+let d=await r.json();
+lugar.value=d.display_name;
+}catch{
+lugar.value=lat+","+lon;
+}
+});
+}
+
+// CONTROL
+function addPersonaCP(){
+personas_cp.innerHTML+=`<div class="item">
+<input placeholder="Nombre y Apellido">
+<input placeholder="DNI">
+</div>`;
+}
+
+function addVehiculoCP(){
+vehiculos_cp.innerHTML+=`<div class="item">
+<input placeholder="Marca">
+<input placeholder="Modelo">
+<input placeholder="Dominio">
+</div>`;
+}
+
+// 911 PERSONAS COMPLETAS
+function addPersona911(){
+personas911.innerHTML+=`<div class="item">
+<input placeholder="Nombre y Apellido">
+<input placeholder="DNI">
+<input placeholder="Fecha nacimiento">
+<input placeholder="Edad">
+<input placeholder="Nacionalidad">
+<input placeholder="Estado civil">
+<input placeholder="Ocupación">
+<input placeholder="Domicilio real">
+<input placeholder="Domicilio legal">
+<input placeholder="Teléfono">
+<input placeholder="Padre">
+<input placeholder="Madre">
+<select>
+<option>Primario completo</option>
+<option>Primario incompleto</option>
+<option>Secundario completo</option>
+<option>Secundario incompleto</option>
+<option>Terciario</option>
+<option>Universitario</option>
+</select>
+</div>`;
+}
+
+// 911 VEHICULOS COMPLETOS
+function addVehiculo911(){
+vehiculos911.innerHTML+=`<div class="item">
+<input placeholder="Marca">
+<input placeholder="Modelo">
+<input placeholder="Dominio">
+<input placeholder="Color">
+<input placeholder="Chasis">
+<input placeholder="Motor">
+<input placeholder="Titular">
+<input placeholder="Habilitado">
+<input placeholder="Impedimento">
+<input placeholder="Otros">
+</div>`;
+}
+
+// RELATO IA
+function relatoIA(){
+let txt="Personal policial se constituye en el lugar ("+lugar.value+"), procediendo a la identificación de personas y verificación de vehículos.";
+relato.value=txt;
+}
+
+// GENERAR
+function generar(){
+
+let t="";
+
+if(tipo.value==="cv8c"){
+t="*CV 8C*\nCONTROL POBLACIONAL\n\n";
+
+t+="PERSONAS IDENTIFICADAS:\n";
+document.querySelectorAll("#personas_cp .item").forEach((p,i)=>{
+let d=p.querySelectorAll("input");
+t+=(i+1)+") "+d[0].value+" DNI:"+d[1].value+"\n";
+});
+
+t+="\nVEHÍCULOS IDENTIFICADOS:\n";
+document.querySelectorAll("#vehiculos_cp .item").forEach((v,i)=>{
+let d=v.querySelectorAll("input");
+t+=(i+1)+") Marca:"+d[0].value+" Modelo:"+d[1].value+" Dominio:"+d[2].value+"\n";
+});
+
+t+="\nLos mismos al ser cursados por sistema IDGE (POC), corresponden y no poseen impedimentos legales vigentes.";
+}
+
+if(tipo.value==="911"){
+t="INTERVENCIÓN 911\n\n";
+
+t+="LUGAR: "+lugar.value+"\n";
+
+t+="\nPERSONAS:\n";
+document.querySelectorAll("#personas911 .item").forEach((p,i)=>{
+let d=p.querySelectorAll("input");
+t+=(i+1)+") "+d[0].value+" DNI:"+d[1].value+"\n";
+});
+
+t+="\nVEHÍCULOS:\n";
+document.querySelectorAll("#vehiculos911 .item").forEach((v,i)=>{
+let d=v.querySelectorAll("input");
+t+=(i+1)+") "+d[0].value+" "+d[1].value+" "+d[2].value+"\n";
+});
+
+t+="\nSAME: "+same.value+"\n";
+t+="DESTINO: "+destino.value+"\n";
+
+t+="\nJUDICIAL: "+juzgado.value+"\n";
+
+t+="\nRELATO:\n"+relato.value;
+}
+
+preview.innerText=t;
+window._txt=t;
+}
+
+// WHATSAPP
+function whatsapp(){
+if(!window._txt){alert("Generar primero");return;}
+window.location.href="https://wa.me/?text="+encodeURIComponent(window._txt);
+}
+
+</script>
+
+</body>
+</html>
