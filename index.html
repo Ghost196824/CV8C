@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SISTEMA POLICIAL 8C FINAL ESTABLE</title>
+
+<style>
+body{font-family:Arial;background:#111;color:#fff;padding:10px}
+.container{max-width:1000px;margin:auto;background:#1c1c1c;padding:15px;border-radius:10px}
+input,select,textarea,button{width:100%;margin:6px 0;padding:10px;border-radius:6px;border:none}
+button{background:#28a745;color:#fff;font-weight:bold}
+.item{border:1px solid #444;padding:10px;margin:10px 0;border-radius:6px}
+.seccion{display:none}
+#preview{background:#000;padding:10px;margin-top:10px;white-space:pre-wrap}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>🚔 SISTEMA POLICIAL 8C FINAL</h2>
+
+<select id="tipo">
+<option value="">Seleccionar</option>
+<option value="cv8c">Control Poblacional</option>
+<option value="911">Intervención 911</option>
+</select>
+
+<input id="interventor" placeholder="Interventor">
+<input id="lugar" placeholder="Lugar">
+<button onclick="gps()">📍 GPS</button>
+<input id="fecha">
+<input id="hora">
+
+<!-- CV8C -->
+<div id="cv8c" class="seccion">
+<h3>PERSONAS</h3>
+<div id="cv_personas"></div>
+<button onclick="addCVPersona()">+ Persona</button>
+
+<h3>VEHICULOS</h3>
+<div id="cv_vehiculos"></div>
+<button onclick="addCVVehiculo()">+ Vehículo</button>
+</div>
+
+<!-- 911 -->
+<div id="acta911" class="seccion">
+
+<h3>👤 PERSONAS COMPLETAS</h3>
+<div id="p911"></div>
+<button onclick="addPersona911()">+ Persona</button>
+
+<h3>🚗 VEHICULOS COMPLETOS</h3>
+<div id="v911"></div>
+<button onclick="addVehiculo911()">+ Vehículo</button>
+
+<h3>🚑 SAME</h3>
+<select id="same"><option>NO</option><option>SI</option></select>
+<input id="unidad" placeholder="Unidad SAME">
+<input id="medico" placeholder="Médico">
+<input id="matricula" placeholder="Matrícula">
+<select id="traslada"><option>NO TRASLADA</option><option>TRASLADA</option></select>
+<select id="destino">
+<option>GRIERSON</option><option>SANTOJANNI</option><option>PIÑERO</option><option>OTRO</option>
+</select>
+<input id="destino_otro" placeholder="Otro destino" style="display:none">
+<input id="diagnostico" placeholder="Diagnóstico">
+
+<h3>⚖️ INTERVENCIÓN JUDICIAL</h3>
+<select id="fuero">
+<option value="">Seleccionar</option>
+<option value="nacional">Nacional</option>
+<option value="federal">Federal</option>
+<option value="caba">CABA</option>
+<option value="otro">OTRO</option>
+</select>
+<select id="juzgado"></select>
+<input id="magistrado" placeholder="Magistrado">
+<input id="secretaria" placeholder="Secretaría">
+<input id="sumario" placeholder="Número de sumario">
+<input id="caratula" placeholder="Carátula">
+
+<h3>🧠 RELATO</h3>
+<textarea id="relato"></textarea>
+<button onclick="ia()">🤖 IA</button>
+
+</div>
+
+<button onclick="generar()">GENERAR</button>
+<button onclick="whatsapp()">WHATSAPP</button>
+
+<div id="preview"></div>
+
+</div>
+
+<script>
+
+// fecha hora
+window.onload=()=>{
+let n=new Date();
+fecha.value=n.toLocaleDateString();
+hora.value=n.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+};
+
+// secciones
+tipo.onchange=()=>{
+cv8c.style.display="none";
+acta911.style.display="none";
+if(tipo.value==="cv8c") cv8c.style.display="block";
+if(tipo.value==="911") acta911.style.display="block";
+};
+
+// GPS
+function gps(){
+navigator.geolocation.getCurrentPosition(async (pos)=>{
+let lat=pos.coords.latitude;
+let lon=pos.coords.longitude;
+try{
+let r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+let d=await r.json();
+lugar.value=d.display_name || lat+","+lon;
+}catch{
+lugar.value=lat+","+lon;
+}
+});
+}
+
+// destino OTRO
+document.addEventListener("change",(e)=>{
+if(e.target.id==="destino"){
+destino_otro.style.display=e.target.value==="OTRO"?"block":"none";
+}
+});
+
+// juzgados dinámico
+fuero.onchange=()=>{
+juzgado.innerHTML="";
+if(fuero.value==="nacional"){
+for(let i=1;i<=50;i++){
+juzgado.innerHTML+=`<option>Juzgado Nacional en lo Criminal y Correccional N°${i}</option>`;
+}
+}
+if(fuero.value==="federal"){
+for(let i=1;i<=12;i++){
+juzgado.innerHTML+=`<option>Juzgado Criminal y Correccional Federal N°${i}</option>`;
+}
+}
+if(fuero.value==="caba"){
+for(let i=1;i<=24;i++){
+juzgado.innerHTML+=`<option>Juzgado Penal, Contravencional y de Faltas N°${i}</option>`;
+}
+juzgado.innerHTML+=`<option>UFLa Norte</option><option>UFLa Sur</option><option>UFLa Este</option><option>UFLa Oeste</option>`;
+}
+if(fuero.value==="otro"){
+juzgado.innerHTML="<option>OTRO</option>";
+}
+};
+
+// CV8C
+function addCVPersona(){
+let d=document.createElement("div");
+d.className="item";
+d.innerHTML='<input placeholder="Nombre y Apellido"><input placeholder="DNI">';
+cv_personas.appendChild(d);
+}
+
+function addCVVehiculo(){
+let d=document.createElement("div");
+d.className="item";
+d.innerHTML='<input placeholder="Dominio"><input placeholder="Marca"><input placeholder="Modelo">';
+cv_vehiculos.appendChild(d);
+}
+
+// PERSONA 911 COMPLETA
+function addPersona911(){
+let d=document.createElement("div");
+d.className="item";
+d.innerHTML=`
+<input placeholder="Nombre y Apellido">
+<input placeholder="DNI">
+<input placeholder="Fecha nacimiento">
+<input placeholder="Edad">
+<input placeholder="Nacionalidad">
+<input placeholder="Estado civil">
+<input placeholder="Ocupación">
+<input placeholder="Domicilio real">
+<input placeholder="Domicilio legal">
+<input placeholder="Localidad">
+<input placeholder="Teléfono">
+<input placeholder="Padre">
+<input placeholder="Madre">
+<select>
+<option>Primario incompleto</option>
+<option>Primario completo</option>
+<option>Secundario incompleto</option>
+<option>Secundario completo</option>
+<option>Terciario</option>
+<option>Universitario</option>
+</select>
+`;
+p911.appendChild(d);
+}
+
+// VEHICULO COMPLETO
+function addVehiculo911(){
+let d=document.createElement("div");
+d.className="item";
+d.innerHTML=`
+<input placeholder="Dominio">
+<select>
+<option>Toyota</option><option>Ford</option><option>Volkswagen</option>
+<option>Chevrolet</option><option>Fiat</option><option>Renault</option>
+<option>Peugeot</option><option>Citroen</option><option>Honda</option>
+<option>Nissan</option><option>BMW</option><option>Audi</option>
+<option>Mercedes-Benz</option><option>Hyundai</option><option>Kia</option>
+<option>Jeep</option><option>Chery</option><option>Suzuki</option>
+<option>Iveco</option><option>Scania</option><option>OTRO</option>
+</select>
+<select>
+<option>Corolla</option><option>Hilux</option><option>Amarok</option>
+<option>Gol</option><option>Fiesta</option><option>Focus</option>
+<option>Cronos</option><option>208</option><option>C3</option>
+<option>Civic</option><option>Ranger</option><option>Kangoo</option>
+<option>Partner</option><option>Qubo</option><option>OTRO</option>
+</select>
+<input placeholder="Color">
+<input placeholder="Chasis">
+<input placeholder="Motor">
+<input placeholder="Titular">
+`;
+v911.appendChild(d);
+}
+
+// IA relato
+function ia(){
+relato.value=`En fecha ${fecha.value}, siendo las ${hora.value} hs, personal policial se constituye en ${lugar.value}, donde realiza tareas preventivas, sin registrarse impedimentos legales vigentes, procediéndose a labrar las actuaciones correspondientes.`;
+}
+
+// generar
+function generar(){
+let t="";
+
+if(tipo.value==="cv8c"){
+t="*CV 8C*\n*CONTROL POBLACIONAL*\n\n";
+t+="INTERVENTOR: "+interventor.value+"\n";
+t+="LUGAR: "+lugar.value+"\n";
+t+="HORA: "+hora.value+"\n\n";
+
+document.querySelectorAll("#cv_personas .item").forEach((p,i)=>{
+let d=p.querySelectorAll("input");
+t+=(i+1)+") "+d[0].value+"\nDNI: "+d[1].value+"\n";
+});
+
+t+="\nLos mismos al ser cursados por sistema IDGE (POC), corresponden y no poseen impedimentos legales vigentes.\n\n";
+
+document.querySelectorAll("#cv_vehiculos .item").forEach((v,i)=>{
+let d=v.querySelectorAll("input");
+t+=(i+1)+") "+d[0].value+" "+d[1].value+" "+d[2].value+"\n";
+});
+}
+
+if(tipo.value==="911"){
+t="*CV 8C*\n\n";
+t+="INTERVENTOR: "+interventor.value+"\n";
+t+="LUGAR: "+lugar.value+"\n";
+t+="FECHA: "+fecha.value+"\n";
+t+="HORA: "+hora.value+"\n\n";
+
+t+="VEHICULOS:\n";
+document.querySelectorAll("#v911 .item").forEach((v,i)=>{
+let d=v.querySelectorAll("input,select");
+t+=(i+1)+")\n";
+t+="Dominio: "+d[0].value+"\n";
+t+="Marca: "+d[1].value+"\n";
+t+="Modelo: "+d[2].value+"\n";
+t+="Color: "+d[3].value+"\n";
+t+="Chasis: "+d[4].value+"\n";
+t+="Motor: "+d[5].value+"\n";
+t+="Titular: "+d[6].value+"\n\n";
+});
+
+let dest = destino.value==="OTRO"?destino_otro.value:destino.value;
+
+t+="SAME: "+same.value+"\n";
+t+="UNIDAD: "+unidad.value+"\n";
+t+="MEDICO: "+medico.value+"\n";
+t+="MATRICULA: "+matricula.value+"\n";
+t+="TRASLADO: "+traslada.value+"\n";
+t+="DESTINO: "+dest+"\n";
+t+="DIAGNOSTICO: "+diagnostico.value+"\n\n";
+
+t+="JUZGADO: "+juzgado.value+"\n";
+t+="MAGISTRADO: "+magistrado.value+"\n";
+t+="SECRETARIA: "+secretaria.value+"\n";
+t+="SUMARIO: "+sumario.value+"\n";
+t+="CARATULA: "+caratula.value+"\n\n";
+
+t+="RESEÑA:\n"+relato.value;
+}
+
+preview.innerText=t;
+window._txt=t;
+}
+
+function whatsapp(){
+if(!window._txt)return;
+window.location.href="https://wa.me/?text="+encodeURIComponent(window._txt);
+}
+
+</script>
+</body>
+</html>
